@@ -1,4 +1,4 @@
-/* The 14 worksheets, transcribed. Coordinates are [row, col], row 0 at the top.
+/* The 14 built-in levels. Coordinates are [row, col], row 0 at the top.
    mouse: [row, col, facing]  facing: N (up), E (right), S (down), W (left)
    walls: [r1, c1, r2, c2]    a wall between two neighbouring cells
    solution: one valid plan, used by the tests only. */
