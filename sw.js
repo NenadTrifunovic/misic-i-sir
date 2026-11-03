@@ -1,5 +1,5 @@
 /* Offline cache for the app shell. Bump VERSION whenever files change. */
-const VERSION = 'misic-v3';
+const VERSION = 'misic-v4';
 const FILES = [
   './',
   './index.html',
@@ -30,8 +30,10 @@ self.addEventListener('fetch', (ev) => {
   if (ev.request.method !== 'GET') return;
   const url = new URL(ev.request.url);
   if (url.origin !== location.origin) return;
+  // cache: 'no-cache' = always revalidate with the server (GitHub Pages sends max-age=600,
+  // which would otherwise keep a 10-minute-old file in the browser's HTTP cache).
   ev.respondWith(
-    fetch(ev.request)
+    fetch(ev.request.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then((res) => {
         if (res && res.ok) {
           const copy = res.clone();
