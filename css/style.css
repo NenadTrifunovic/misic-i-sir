@@ -134,8 +134,8 @@ main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; }
 .mouse { pointer-events: none; }
 
 /* ---------- play ---------- */
-.play, .editor { flex: 1; display: grid; grid-template-rows: auto 1fr; gap: 8px; align-content: start; }
-.board-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.play, .editor { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; gap: 8px; align-content: start; }
+.board-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
 .tip-card { max-width: 340px; }
 .tip-art { width: 110px; height: auto; display: block; margin: 0 auto 6px; }
 .tip-card p { font-size: .95rem; line-height: 1.4; }
@@ -144,12 +144,12 @@ main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; }
 .msg.bad { color: var(--red); }
 .msg.good { color: var(--green-dark); }
 .msg.warn { color: #b7791f; }
-.controls { display: flex; flex-direction: column; gap: 8px; }
+.controls { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .slots-head { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--muted); font-size: .85rem; }
 .slots-head span { flex: 1; }
 .slots { display: flex; gap: 6px; justify-content: center; min-height: 56px; }
 .slots.plan { flex-wrap: wrap; }
-.slots.trace { overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; }
+.slots.trace { overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; max-width: 100%; scrollbar-width: thin; }
 .slots-empty { color: var(--muted); font-size: .9rem; align-self: center; }
 .slot {
   flex: none; width: 46px; height: 54px; border-radius: 12px; border: 2px solid var(--line); background: #fff;
