@@ -83,8 +83,9 @@
     '<circle cx="-12" cy="-6" r="5" fill="#e0a800"/><circle cx="10" cy="-1" r="4" fill="#e0a800"/>' +
     '<circle cx="-22" cy="2" r="2.5" fill="#e0a800"/><circle cx="18" cy="19" r="3.5" fill="#c99a00"/><circle cx="-14" cy="20" r="3" fill="#c99a00"/>';
 
+  /* SVG transform attribute (not CSS): identical behaviour in every browser, incl. Safari/WebView. */
   function mouseTransform(pos, angle) {
-    return 'translate(' + (pos.c * S + S / 2) + 'px,' + (pos.r * S + S / 2) + 'px) rotate(' + angle + 'deg)';
+    return 'translate(' + (pos.c * S + S / 2) + ' ' + (pos.r * S + S / 2) + ') rotate(' + angle + ')';
   }
 
   /* Build the SVG markup for a level. opts.grid draws ghost squares for an editor grid. */
@@ -111,7 +112,7 @@
     }
     if (level.mouse) {
       const pos = { r: level.mouse[0], c: level.mouse[1] };
-      h += '<g class="mouse" style="transform:' + mouseTransform(pos, ANGLE[level.mouse[2]]) + '">' + MOUSE_SVG + '</g>';
+      h += '<g class="mouse" transform="' + mouseTransform(pos, ANGLE[level.mouse[2]]) + '">' + MOUSE_SVG + '</g>';
     }
     const viewBox = (b.minC * S - PAD) + ' ' + (b.minR * S - PAD) + ' ' + (b.cols * S + 2 * PAD) + ' ' + (b.rows * S + 2 * PAD);
     return { viewBox, html: h, bounds: b };
@@ -152,7 +153,7 @@
     app.innerHTML = headerHtml(t('app.title'), null) +
       '<main class="home">' +
         '<div class="hero"><svg viewBox="-70 -60 220 120" class="hero-art" aria-hidden="true">' +
-          '<g style="transform:translate(0px,0px) rotate(90deg)">' + MOUSE_SVG + '</g>' +
+          '<g transform="rotate(90)">' + MOUSE_SVG + '</g>' +
           '<g transform="translate(110 10)">' + CHEESE_SVG + '</g></svg>' +
           '<p>' + esc(t('home.subtitle')) + '</p></div>' +
         '<div class="cards">' + cards + '</div>' +
@@ -272,7 +273,7 @@
         '</section>' +
       '</main><div id="overlay" class="overlay hidden"></div>';
     renderSlots();
-    if (!isPlan) applyMouse(P.free.pos, P.angle, false);
+    applyMouse(isPlan ? E.startState(L) : P.free.pos, P.angle, false);
   }
 
   function renderSlots() {
@@ -300,25 +301,47 @@
 
   const mouseEl = () => $('#board .mouse');
 
-  function applyMouse(pos, angle, animate) {
+  /* Mouse animation: a small tween driven by requestAnimationFrame that writes the
+     SVG transform attribute. visual = where the mouse currently is drawn. */
+  let visual = null;   // { r, c, a }
+  let animTimer = 0;   // setTimeout-driven (requestAnimationFrame pauses in background tabs)
+
+  const easeInOut = (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+  const easeOut = (k) => 1 - (1 - k) * (1 - k);
+  const easeBack = (k) => { const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+
+  function drawMouse(v) {
     const m = mouseEl();
-    if (!m) return;
-    if (!animate) m.style.transition = 'none';
-    m.style.transform = mouseTransform(pos, angle);
-    if (!animate) { void m.getBoundingClientRect(); m.style.transition = ''; }
+    if (m) m.setAttribute('transform', mouseTransform({ r: v.r, c: v.c }, v.a));
+  }
+
+  function tweenMouse(to, dur, ease) {
+    clearTimeout(animTimer);
+    const from = visual || to;
+    return new Promise((resolve) => {
+      const t0 = Date.now();
+      const frame = () => {
+        const k = Math.min(1, (Date.now() - t0) / dur);
+        const e = ease(k);
+        visual = { r: from.r + (to.r - from.r) * e, c: from.c + (to.c - from.c) * e, a: from.a + (to.a - from.a) * e };
+        drawMouse(visual);
+        if (k < 1) animTimer = setTimeout(frame, 16);
+        else { visual = to; drawMouse(visual); resolve(); }
+      };
+      frame();
+    });
+  }
+
+  function applyMouse(pos, angle, animate) {
+    const to = { r: pos.r, c: pos.c, a: angle };
+    if (!animate) { clearTimeout(animTimer); visual = to; drawMouse(to); return Promise.resolve(); }
+    return tweenMouse(to, 420, easeInOut);
   }
 
   async function bumpAnim(pos, angle, blocked) {
-    const m = mouseEl();
-    if (!m) return;
-    const nudged = { r: pos.r + (blocked.r - pos.r) * 0.22, c: pos.c + (blocked.c - pos.c) * 0.22 };
-    m.style.transition = 'transform .14s ease-out';
-    m.style.transform = mouseTransform(nudged, angle);
-    await sleep(150);
-    m.style.transition = 'transform .25s cubic-bezier(.3,1.6,.6,1)';
-    m.style.transform = mouseTransform(pos, angle);
-    await sleep(260);
-    m.style.transition = '';
+    const nudged = { r: pos.r + (blocked.r - pos.r) * 0.22, c: pos.c + (blocked.c - pos.c) * 0.22, a: angle };
+    await tweenMouse(nudged, 140, easeOut);
+    await tweenMouse({ r: pos.r, c: pos.c, a: angle }, 260, easeBack);
   }
 
   function markSlot(i, cls) {
@@ -395,8 +418,8 @@
         if (st.cmd === 'L') { P.angle -= 90; SND.turn(); }
         else if (st.cmd === 'R') { P.angle += 90; SND.turn(); }
         else SND.step();
-        applyMouse(st.to, P.angle, true);
-        await sleep(520);
+        await applyMouse(st.to, P.angle, true);
+        await sleep(100);
         markSlot(st.index, 'done');
       } else {
         SND.bump();
@@ -437,9 +460,9 @@
       else if (cmd === 'R') { P.angle += 90; SND.turn(); }
       else SND.step();
       P.free.pos = res.pos;
-      applyMouse(res.pos, P.angle, true);
       showMsg(t('hint.free'));
-      await sleep(470);
+      await applyMouse(res.pos, P.angle, true);
+      await sleep(60);
       if (play !== P) return;
       if (E.isCheese(P.level, res.pos)) { P.running = false; P.free.done = true; P.free.queue = []; onWin(true); return; }
     } else {
@@ -828,5 +851,13 @@
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+    // When a new version of the worker takes over an already open page, reload once so the
+    // page runs the new files (not on the very first install).
+    let hadController = !!navigator.serviceWorker.controller;
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !refreshing && !(play && play.running)) { refreshing = true; location.reload(); }
+      hadController = true;
+    });
   }
 })();

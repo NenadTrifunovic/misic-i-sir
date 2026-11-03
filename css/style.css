@@ -130,7 +130,7 @@ main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; }
 .cell { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2.5; }
 .ghost { fill: var(--ghost); stroke: #d7dbe1; stroke-width: 2; stroke-dasharray: 7 7; }
 .wall { stroke: var(--wall); stroke-width: 12; stroke-linecap: round; }
-.mouse { transition: transform .45s ease-in-out; will-change: transform; }
+.mouse { pointer-events: none; }
 
 /* ---------- play ---------- */
 .play, .editor { flex: 1; display: grid; grid-template-rows: auto 1fr; gap: 8px; align-content: start; }

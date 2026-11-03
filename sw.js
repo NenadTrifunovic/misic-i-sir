@@ -1,5 +1,5 @@
 /* Offline cache for the app shell. Bump VERSION whenever files change. */
-const VERSION = 'misic-v1';
+const VERSION = 'misic-v2';
 const FILES = [
   './',
   './index.html',
@@ -25,17 +25,20 @@ self.addEventListener('activate', (ev) => {
   );
 });
 
+/* Network first (always the newest files when online), cache as the offline fallback. */
 self.addEventListener('fetch', (ev) => {
   if (ev.request.method !== 'GET') return;
   const url = new URL(ev.request.url);
   if (url.origin !== location.origin) return;
   ev.respondWith(
-    caches.match(ev.request, { ignoreSearch: true }).then((hit) => {
-      const net = fetch(ev.request).then((res) => {
-        if (res && res.ok) caches.open(VERSION).then((c) => c.put(ev.request, res.clone()));
+    fetch(ev.request)
+      .then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(VERSION).then((c) => c.put(ev.request, copy));
+        }
         return res;
-      }).catch(() => hit);
-      return hit || net;
-    })
+      })
+      .catch(() => caches.match(ev.request, { ignoreSearch: true }).then((hit) => hit || caches.match('./index.html')))
   );
 });
