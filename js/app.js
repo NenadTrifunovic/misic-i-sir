@@ -79,6 +79,20 @@
     /* small pointer in front of the nose: shows where "forward" is */
     '<path class="nose-arrow" d="M0 -47 L-7 -38 L7 -38 Z" fill="#fff" stroke="#2c5fa8" stroke-width="2.5" stroke-linejoin="round"/>';
 
+  /* Elongated mouse seen from above, drawn behind the arrow pad: the buttons sit on its back,
+     the nose is above ↑ and the tail below ↓. viewBox -40 -62 80 126; the pad covers y -16..54. */
+  const PAD_MOUSE_SVG =
+    '<circle cx="-24" cy="-34" r="11.5" fill="#4f9be8" stroke="#2c5fa8" stroke-width="2.5"/>' +
+    '<circle cx="24" cy="-34" r="11.5" fill="#4f9be8" stroke="#2c5fa8" stroke-width="2.5"/>' +
+    '<circle cx="-26" cy="-36" r="5.5" fill="#ffb3c6"/><circle cx="26" cy="-36" r="5.5" fill="#ffb3c6"/>' +
+    '<path d="M0 57 q 14 10 26 2 q 8 -5 4 -12" fill="none" stroke="#2c5fa8" stroke-width="3.5" stroke-linecap="round"/>' +
+    '<ellipse cx="0" cy="6" rx="33" ry="52" fill="#5ea6ec" stroke="#2c5fa8" stroke-width="2.5"/>' +
+    '<path d="M-7 -41 L-30 -47 M-7 -38 L-31 -36 M7 -41 L30 -47 M7 -38 L31 -36" stroke="#1c2b3a" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<circle cx="-9" cy="-27" r="4" fill="#1c2b3a"/><circle cx="9" cy="-27" r="4" fill="#1c2b3a"/>' +
+    '<circle cx="-7.5" cy="-28.5" r="1.3" fill="#fff"/><circle cx="10.5" cy="-28.5" r="1.3" fill="#fff"/>' +
+    '<circle cx="0" cy="-45" r="5" fill="#1c2b3a"/>' +
+    '<path d="M0 -61 L-7 -52 L7 -52 Z" fill="#fff" stroke="#2c5fa8" stroke-width="2" stroke-linejoin="round"/>';
+
   const CHEESE_SVG =
     '<polygon points="-30,8 30,8 30,28 -30,28" fill="#e8b800" stroke="#c99a00" stroke-width="3" stroke-linejoin="round"/>' +
     '<polygon points="-30,8 30,8 30,-10 -30,-30" fill="#ffd93d" stroke="#c99a00" stroke-width="3" stroke-linejoin="round"/>' +
@@ -253,7 +267,6 @@
       '<main class="play">' +
         '<section class="board-wrap">' +
           (ctx.kind === 'shared' ? '<div class="banner">' + esc(t('shared.title')) + ' <button class="btn tiny" data-act="saveShared">' + esc(t('shared.save')) + '</button></div>' : '') +
-          (store.get('tipSeen', false) ? '' : '<div class="tip" id="tip">🐭 ' + esc(t('tip.perspective')) + ' <button class="btn tiny" data-act="tipOk">' + esc(t('tip.ok')) + '</button></div>') +
           '<svg id="board" class="board" viewBox="' + bm.viewBox + '" preserveAspectRatio="xMidYMid meet">' + bm.html + '</svg>' +
           '<div id="msg" class="msg">' + esc(t(isPlan ? 'hint.plan' : 'hint.free')) + '</div>' +
         '</section>' +
@@ -263,20 +276,40 @@
               ? '<button class="btn tiny" data-act="undo">⌫ ' + esc(t('btn.undo')) + '</button><button class="btn tiny" data-act="clear">' + esc(t('btn.clear')) + '</button>'
               : '<button class="btn tiny" data-act="freeReset">↺ ' + esc(t('btn.reset')) + '</button>') +
           '</div>' +
-          '<div id="slots" class="slots ' + (isPlan ? 'plan' : 'trace') + '"></div>' +
-          '<div class="pad">' +
-            padButton('F', 'up') +
-            padButton('L', 'left') +
-            (isPlan
-              ? '<button class="go" data-act="go">' + esc(t('btn.go')) + '</button>'
-              : '<button class="go reset" data-act="freeReset" aria-label="' + esc(t('btn.reset')) + '">↺</button>') +
-            padButton('R', 'right') +
-            padButton('B', 'down') +
+          '<div id="slots" class="slots ' + (isPlan ? 'plan' : 'trace') + (L.slots > 10 ? ' many' : '') + '"></div>' +
+          '<div class="pad-wrap">' +
+            '<svg class="pad-bg" viewBox="-40 -62 80 124" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + PAD_MOUSE_SVG + '</svg>' +
+            '<div class="pad">' +
+              padButton('F', 'up') +
+              padButton('L', 'left') +
+              (isPlan
+                ? '<button class="go" data-act="go">' + esc(t('btn.go')) + '</button>'
+                : '<button class="go reset" data-act="freeReset" aria-label="' + esc(t('btn.reset')) + '">↺</button>') +
+              padButton('R', 'right') +
+              padButton('B', 'down') +
+            '</div>' +
           '</div>' +
         '</section>' +
       '</main><div id="overlay" class="overlay hidden"></div>';
     renderSlots();
     applyMouse(isPlan ? E.startState(L) : P.free.pos, P.angle, false);
+    if (!store.get('tipSeen', false)) showTip();
+  }
+
+  /* First-time explanation of the arrows, as a small card over the board. */
+  function showTip() {
+    const ov = $('#overlay');
+    if (!ov) return;
+    ov.innerHTML = '<div class="win-card tip-card">' +
+      '<svg viewBox="-40 -62 80 124" class="tip-art" aria-hidden="true">' + PAD_MOUSE_SVG +
+        '<text x="0" y="-5" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">↑</text>' +
+        '<text x="-20" y="22" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">←</text>' +
+        '<text x="20" y="22" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">→</text>' +
+        '<text x="0" y="46" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">↓</text>' +
+      '</svg>' +
+      '<p>' + esc(t('tip.perspective')) + '</p>' +
+      '<div class="row"><button class="btn primary" data-act="tipOk">' + esc(t('tip.ok')) + '</button></div></div>';
+    ov.classList.remove('hidden');
   }
 
   /* Arrow button with a small word under it: ↑ forward, ↓ back, ← → turn (turns stay on the square). */
@@ -834,7 +867,7 @@
     if (d.slot != null && play) return tapSlot(parseInt(d.slot, 10));
     switch (d.act) {
       case 'sound': return toggleSound();
-      case 'tipOk': { store.set('tipSeen', true); const tip = $('#tip'); if (tip) tip.remove(); return; }
+      case 'tipOk': store.set('tipSeen', true); hideOverlay(); return;
       case 'go': return runProgram();
       case 'undo': return undoCmd();
       case 'clear': return clearProgram();
