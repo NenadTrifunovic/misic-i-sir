@@ -135,6 +135,7 @@ main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; }
 /* ---------- play ---------- */
 .play, .editor { flex: 1; display: grid; grid-template-rows: auto 1fr; gap: 8px; align-content: start; }
 .board-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.tip { background: #fff8d6; border: 2px solid var(--yellow); border-radius: 14px; padding: 8px 12px; font-size: .9rem; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: 640px; }
 .banner { background: #fff; border-radius: 999px; padding: 6px 8px 6px 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; box-shadow: var(--shadow); font-size: .9rem; }
 .msg { min-height: 1.6em; text-align: center; font-weight: 600; padding: 2px 8px; color: var(--muted); font-size: .95rem; }
 .msg.bad { color: var(--red); }
@@ -168,7 +169,11 @@ main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; }
 .arrow {
   border: 0; border-radius: 20px; font-size: 2.2rem; font-weight: 800; color: #fff; cursor: pointer;
   box-shadow: 0 5px 0 rgba(0,0,0,.18); transition: transform .08s, box-shadow .08s; line-height: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; position: relative;
 }
+.arrow .glyph { font-size: 1.9rem; line-height: 1; }
+.arrow .lbl { font-size: .6rem; font-weight: 700; letter-spacing: .02em; opacity: .95; line-height: 1; }
+.arrow .curl { position: absolute; top: 4px; right: 6px; font-size: .85rem; opacity: .85; line-height: 1; }
 .arrow:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.18); }
 .arrow.up { grid-area: 1 / 2; background: var(--blue); }
 .arrow.left { grid-area: 2 / 1; background: var(--orange); }

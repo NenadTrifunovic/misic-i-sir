@@ -75,7 +75,9 @@
     '<circle cx="-7.5" cy="-12.5" r="1.3" fill="#fff"/><circle cx="10.5" cy="-12.5" r="1.3" fill="#fff"/>' +
     '<circle cx="0" cy="-30" r="5" fill="#1c2b3a"/>' +
     '<circle cx="0" cy="6" r="4.5" fill="#ffd23f"/><circle cx="0" cy="24" r="4.5" fill="#7bd389"/>' +
-    '<circle cx="-10" cy="15" r="4.5" fill="#ff8c42"/><circle cx="10" cy="15" r="4.5" fill="#b388eb"/>';
+    '<circle cx="-10" cy="15" r="4.5" fill="#ff8c42"/><circle cx="10" cy="15" r="4.5" fill="#b388eb"/>' +
+    /* small pointer in front of the nose: shows where "forward" is */
+    '<path class="nose-arrow" d="M0 -47 L-7 -38 L7 -38 Z" fill="#fff" stroke="#2c5fa8" stroke-width="2.5" stroke-linejoin="round"/>';
 
   const CHEESE_SVG =
     '<polygon points="-30,8 30,8 30,28 -30,28" fill="#e8b800" stroke="#c99a00" stroke-width="3" stroke-linejoin="round"/>' +
@@ -251,6 +253,7 @@
       '<main class="play">' +
         '<section class="board-wrap">' +
           (ctx.kind === 'shared' ? '<div class="banner">' + esc(t('shared.title')) + ' <button class="btn tiny" data-act="saveShared">' + esc(t('shared.save')) + '</button></div>' : '') +
+          (store.get('tipSeen', false) ? '' : '<div class="tip" id="tip">🐭 ' + esc(t('tip.perspective')) + ' <button class="btn tiny" data-act="tipOk">' + esc(t('tip.ok')) + '</button></div>') +
           '<svg id="board" class="board" viewBox="' + bm.viewBox + '" preserveAspectRatio="xMidYMid meet">' + bm.html + '</svg>' +
           '<div id="msg" class="msg">' + esc(t(isPlan ? 'hint.plan' : 'hint.free')) + '</div>' +
         '</section>' +
@@ -262,18 +265,25 @@
           '</div>' +
           '<div id="slots" class="slots ' + (isPlan ? 'plan' : 'trace') + '"></div>' +
           '<div class="pad">' +
-            '<button class="arrow up" data-cmd="F" aria-label="' + esc(t('cmd.F')) + '">↑</button>' +
-            '<button class="arrow left" data-cmd="L" aria-label="' + esc(t('cmd.L')) + '">←</button>' +
+            padButton('F', 'up') +
+            padButton('L', 'left') +
             (isPlan
               ? '<button class="go" data-act="go">' + esc(t('btn.go')) + '</button>'
               : '<button class="go reset" data-act="freeReset" aria-label="' + esc(t('btn.reset')) + '">↺</button>') +
-            '<button class="arrow right" data-cmd="R" aria-label="' + esc(t('cmd.R')) + '">→</button>' +
-            '<button class="arrow down" data-cmd="B" aria-label="' + esc(t('cmd.B')) + '">↓</button>' +
+            padButton('R', 'right') +
+            padButton('B', 'down') +
           '</div>' +
         '</section>' +
       '</main><div id="overlay" class="overlay hidden"></div>';
     renderSlots();
     applyMouse(isPlan ? E.startState(L) : P.free.pos, P.angle, false);
+  }
+
+  /* Arrow button with a small word under it: ↑ forward, ↓ back, ← → turn (turns stay on the square). */
+  function padButton(cmd, cls) {
+    const turnMark = cmd === 'L' ? '<span class="curl">↺</span>' : cmd === 'R' ? '<span class="curl">↻</span>' : '';
+    return '<button class="arrow ' + cls + '" data-cmd="' + cmd + '" aria-label="' + esc(t('cmd.' + cmd)) + '">' +
+      turnMark + '<span class="glyph">' + ARROWS[cmd] + '</span><span class="lbl">' + esc(t('lbl.' + cmd)) + '</span></button>';
   }
 
   function renderSlots() {
@@ -432,7 +442,11 @@
     P.running = false;
     app.classList.remove('running');
     if (res.success) onWin(false);
-    else if (res.reason === 'wall' || res.reason === 'edge') showMsg(t('msg.' + res.reason, { n: res.failIndex + 1 }), 'bad');
+    else if (res.reason === 'wall' || res.reason === 'edge') {
+      const failed = P.program[res.failIndex];
+      showMsg(t('msg.' + res.reason, { n: res.failIndex + 1 }) + ' ' + t(failed === 'B' ? 'msg.hintB' : 'msg.hintF'), 'bad');
+    }
+    else if (res.reason === 'short' && !P.program.some((c) => c === 'F' || c === 'B')) showMsg(t('msg.onlyTurns'), 'bad');
     else showMsg(t('msg.' + res.reason), 'bad');
   }
 
@@ -460,14 +474,14 @@
       else if (cmd === 'R') { P.angle += 90; SND.turn(); }
       else SND.step();
       P.free.pos = res.pos;
-      showMsg(t('hint.free'));
+      showMsg(t(cmd === 'L' || cmd === 'R' ? 'hint.turned' : 'hint.free'));
       await applyMouse(res.pos, P.angle, true);
       await sleep(60);
       if (play !== P) return;
       if (E.isCheese(P.level, res.pos)) { P.running = false; P.free.done = true; P.free.queue = []; onWin(true); return; }
     } else {
       SND.bump();
-      showMsg(t('msg.freeBump.' + res.reason), 'bad');
+      showMsg(t('msg.freeBump.' + res.reason) + ' ' + t(cmd === 'B' ? 'msg.hintB' : 'msg.hintF'), 'bad');
       await bumpAnim(P.free.pos, P.angle, res.blocked);
     }
     if (play === P) P.running = false;
@@ -820,6 +834,7 @@
     if (d.slot != null && play) return tapSlot(parseInt(d.slot, 10));
     switch (d.act) {
       case 'sound': return toggleSound();
+      case 'tipOk': { store.set('tipSeen', true); const tip = $('#tip'); if (tip) tip.remove(); return; }
       case 'go': return runProgram();
       case 'undo': return undoCmd();
       case 'clear': return clearProgram();

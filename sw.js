@@ -1,5 +1,5 @@
 /* Offline cache for the app shell. Bump VERSION whenever files change. */
-const VERSION = 'misic-v2';
+const VERSION = 'misic-v3';
 const FILES = [
   './',
   './index.html',
