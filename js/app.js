@@ -314,9 +314,8 @@
 
   /* Arrow button with a small word under it: ↑ forward, ↓ back, ← → turn (turns stay on the square). */
   function padButton(cmd, cls) {
-    const turnMark = cmd === 'L' ? '<span class="curl">↺</span>' : cmd === 'R' ? '<span class="curl">↻</span>' : '';
     return '<button class="arrow ' + cls + '" data-cmd="' + cmd + '" aria-label="' + esc(t('cmd.' + cmd)) + '">' +
-      turnMark + '<span class="glyph">' + ARROWS[cmd] + '</span><span class="lbl">' + esc(t('lbl.' + cmd)) + '</span></button>';
+      '<span class="glyph">' + ARROWS[cmd] + '</span><span class="lbl">' + esc(t('lbl.' + cmd)) + '</span></button>';
   }
 
   function renderSlots() {
